@@ -1,4 +1,5 @@
 <?php
+
 namespace GDText;
 
 use GDText\Struct\Point;
@@ -20,6 +21,10 @@ class Box
      * @var Color
      */
     protected $strokeColor;
+    /**
+     * @var int
+     */
+    protected $letterSpacing;
 
     /**
      * @var int
@@ -120,13 +125,21 @@ class Box
     {
         $this->strokeColor = $color;
     }
-    
+
     /**
      * @param int $v Stroke size in *pixels*
      */
     public function setStrokeSize($v)
     {
         $this->strokeSize = $v;
+    }
+
+    /**
+     * @param int $ls
+     */
+    public function setLetterSpacing($ls)
+    {
+        $this->letterSpacing = $ls;
     }
 
     /**
@@ -320,13 +333,14 @@ class Box
             }
 
             $this->strokeText($xMOD, $yMOD, $line);
-            $this->drawInternal(
+            $this->drawInternalWithSpacing(
                 new Point(
                     $xMOD,
                     $yMOD
                 ),
                 $this->fontColor,
-                $line
+                $line,
+                $this->letterSpacing
             );
 
             $n++;
@@ -348,12 +362,12 @@ class Box
             $words = explode(" ", $line);
             $line = $words[0];
             for ($i = 1; $i < count($words); $i++) {
-                $box = $this->calculateBox($line." ".$words[$i]);
+                $box = $this->calculateBox($line . " " . $words[$i]);
                 if ($box->getWidth() >= $this->box->getWidth()) {
                     $lines[] = $line;
                     $line = $words[$i];
                 } else {
-                    $line .= " ".$words[$i];
+                    $line .= " " . $words[$i];
                 }
             }
             $lines[] = $line;
@@ -369,6 +383,10 @@ class Box
         return 0.75 * $this->fontSize;
     }
 
+    /**
+     * @param Rectangle $rect
+     * @param Color $color
+     */
     protected function drawFilledRectangle(Rectangle $rect, Color $color)
     {
         imagefilledrectangle(
@@ -390,7 +408,7 @@ class Box
     {
         $bounds = imagettfbbox($this->getFontSizeInPoints(), 0, $this->fontFace, $text);
 
-        $xLeft  = $bounds[0]; // (lower|upper) left corner, X position
+        $xLeft = $bounds[0]; // (lower|upper) left corner, X position
         $xRight = $bounds[2]; // (lower|upper) right corner, X position
         $yLower = $bounds[1]; // lower (left|right) corner, Y position
         $yUpper = $bounds[5]; // upper (left|right) corner, Y position
@@ -414,9 +432,40 @@ class Box
         }
     }
 
+    /**
+     * @param Point $position
+     * @param Color $color
+     * @param string $text
+     * @param int $spacing
+     */
+    protected function drawInternalWithSpacing(Point $position, Color $color, $text, $spacing = 0)
+    {
+        if ($spacing == 0) {
+            $this->drawInternal($position, $color, $text);
+            return;
+        }
+
+        $temp_x = $position->getX();
+        for ($i = 0; $i < strlen($text); $i++) {
+            // set temporary X position
+            $position->setX($temp_x);
+            // draw single letter
+            $boundingBox = $this->drawInternal($position, $color, $text[$i]);
+            // calculate next X position
+            $temp_x += $spacing + ($boundingBox[2] - $boundingBox[0]);
+        }
+    }
+
+    /**
+     * @param Point $position
+     * @param Color $color
+     * @param string $text
+     *
+     * @return array
+     */
     protected function drawInternal(Point $position, Color $color, $text)
     {
-        imagettftext(
+        return imagettftext(
             $this->im,
             $this->getFontSizeInPoints(),
             0, // no rotation
