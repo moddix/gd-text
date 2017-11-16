@@ -181,7 +181,7 @@ class Box
     }
 
     /**
-     * Sets text alignment inside textbox
+     * Sets text alignment inside text box
      * @param string $x Horizontal alignment. Allowed values are: left, center, right.
      * @param string $y Vertical alignment. Allowed values are: top, center, bottom.
      */
@@ -191,11 +191,11 @@ class Box
         $yAllowed = array('top', 'bottom', 'center');
 
         if (!in_array($x, $xAllowed)) {
-            throw new \InvalidArgumentException('Invalid horizontal alignement value was specified.');
+            throw new \InvalidArgumentException('Invalid horizontal alignment value was specified.');
         }
 
         if (!in_array($y, $yAllowed)) {
-            throw new \InvalidArgumentException('Invalid vertical alignement value was specified.');
+            throw new \InvalidArgumentException('Invalid vertical alignment value was specified.');
         }
 
         $this->alignX = $x;
@@ -203,11 +203,11 @@ class Box
     }
 
     /**
-     * Sets textbox position and dimensions
+     * Sets text box position and dimensions
      * @param int $x Distance in pixels from left edge of image.
      * @param int $y Distance in pixels from top edge of image.
-     * @param int $width Width of texbox in pixels.
-     * @param int $height Height of textbox in pixels.
+     * @param int $width Width of text box in pixels.
+     * @param int $height Height of text box in pixels.
      */
     public function setBox($x, $y, $width, $height)
     {
@@ -215,7 +215,7 @@ class Box
     }
 
     /**
-     * Enables debug mode. Whole textbox and individual lines will be filled with random colors.
+     * Enables debug mode. Whole text box and individual lines will be filled with random colors.
      */
     public function enableDebug()
     {
@@ -251,7 +251,7 @@ class Box
         }
 
         if ($this->debug) {
-            // Marks whole texbox area with color
+            // Marks whole text box area with color
             $this->drawFilledRectangle(
                 $this->box,
                 new Color(rand(180, 255), rand(180, 255), rand(180, 255), 80)
@@ -275,7 +275,13 @@ class Box
 
         $n = 0;
         foreach ($lines as $line) {
-            $box = $this->calculateBox($line);
+            // calculate box with spacing
+            if ($this->letterSpacing) {
+                $box = $this->calculateBoxWithSpacing($line);
+            } else {
+                $box = $this->calculateBox($line);
+            }
+
             switch ($this->alignX) {
                 case HorizontalAlignment::Center:
                     $xAlign = ($this->box->getWidth() - $box->getWidth()) / 2;
@@ -294,7 +300,7 @@ class Box
             $yMOD = $this->box->getY() + $yAlign + $yShift + ($n * $lineHeightPx);
 
             if ($line && $this->backgroundColor) {
-                // Marks whole texbox area with given background-color
+                // Marks whole text box area with given background-color
                 $backgroundHeight = $this->fontSize;
 
                 $this->drawFilledRectangle(
@@ -419,6 +425,28 @@ class Box
             $xRight - $xLeft,
             $yLower - $yUpper
         );
+    }
+
+    /**
+     * @param $text
+     * @return Rectangle
+     */
+    protected function calculateBoxWithSpacing($text)
+    {
+        // calculate box with full line of text
+        $rect = $this->calculateBox($text);
+        // reset width of the rectangle for recalculation
+        $rect->setWidth(0);
+        for ($i = 0; $i < strlen($text); $i++) {
+            // calculate width of a single letter
+            $box = $this->calculateBox($text[$i]);
+            // add letter spacing to width of the letter and add it to the already calculated width
+            $width = $rect->getWidth() + ($box->getWidth() + $this->letterSpacing);
+            // set new width to the rectangle
+            $rect->setWidth($width);
+        }
+
+        return $rect;
     }
 
     protected function strokeText($x, $y, $text)

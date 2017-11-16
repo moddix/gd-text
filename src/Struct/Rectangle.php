@@ -37,11 +37,27 @@ class Rectangle extends Point
     }
 
     /**
+     * @param $width
+     */
+    public function setWidth($width)
+    {
+        $this->width = $width;
+    }
+
+    /**
      * @return int
      */
     public function getHeight()
     {
         return $this->height;
+    }
+
+    /**
+     * @param $height
+     */
+    public function setHeight($height)
+    {
+        $this->height = $height;
     }
 
     /**
